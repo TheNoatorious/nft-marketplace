@@ -7,7 +7,7 @@ pragma solidity ^0.8.0;
         b. Keep track of the token ID's
         c. Keep track of the token owner addresses to token ids
         d. Keep track of how many tokens an owner address has
-        e. Create an event that emits: 
+        e. Create an event that emits:
             Transfer log - contract address, where it is being minted to, the id
     */
 
@@ -15,9 +15,9 @@ contract ERC721 {
     uint constant NEW_TOKEN = 1;
 
     event Transfer(
-        address from, 
-        address to, uint256 
-        tokenId
+        address from,
+        address to,
+        uint256 tokenId
     );
 
     // Mapping in solidity creates a hash table of key pair values
@@ -27,11 +27,14 @@ contract ERC721 {
     // Mapping from owner to number of owned tokens
     mapping(address => uint256) private _ownedTokens;
 
+    // Mapping token id to approved addresses
+    mapping(uint256 => address) private _tokenApprovals;
+
     /// @notice Count all NFTs assigned to an owner
     /// @dev NFTs assigned to the zero address are considered invalid, and this
     ///  function throws for queries about the zero address.
     /// @param _owner An address for whom to query the balance
-    /// @return The number of NFTs owned by `_owner`, possibly 
+    /// @return The number of NFTs owned by `_owner`, possibly
     function balanceOf(address _owner) public view returns(uint256) {
         require(_owner != address(0), 'Owner query for non-existent token');
 
@@ -72,5 +75,37 @@ contract ERC721 {
         _ownedTokens[to] += NEW_TOKEN;
 
         emit Transfer(address(0), to, tokenId);
+    }
+
+    /// @notice Transfer ownership of an NFT
+    /// @dev Throws unless `msg.sender` is the current owner, an authorized
+    ///  operator, or the approved address for this NFT. Throws if `_from` is
+    ///  not the current owner. Throws if `_to` is the zero address. Throws if
+    ///  `_tokenId` is not a valid NFT.
+    /// @param _from The current owner of the NFT
+    /// @param _to The new owner
+    /// @param _tokenId The NFT to transfer
+    function _transferFrom(address _from, address _to, uint256 _tokenId) internal {
+        require(_to != address(0), 'Address can not be 0');
+        require(ownerOf(_tokenId) == _from, 'Address does not own the token');
+
+        // 1. add the token id to the address receiving the token
+        // 2. update the balance of the address from token
+        // 3. update the balance of the address too
+        // 4. add the safe functionality:
+        //      a. require that the address receiving a token is not a zero address
+        //      b. require the address transfering the token actually owns the token
+
+        _ownedTokens[_from] -= NEW_TOKEN;
+        _ownedTokens[_to] += NEW_TOKEN;
+
+        //transfer - set owner to the new address
+        _tokenOwner[_tokenId] = _to;
+
+        emit Transfer(_from, _to, _tokenId);
+    }
+
+    function transferFrom(address _from, address _to, uint256 _tokenId) public {
+        _transferFrom(_from, _to, _tokenId);
     }
 }
