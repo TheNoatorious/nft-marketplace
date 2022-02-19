@@ -15,29 +15,6 @@ contract ERC721Enumerable is ERC721 {
     // mapping from token id index of the owner tokens list
     mapping(uint256 => uint256) private _ownedTokensIndex;
 
-    /// @notice Count NFTs tracked by this contract
-    /// @return A count of valid NFTs tracked by this contract, where each one of
-    ///  them has an assigned and queryable owner not equal to the zero address
-    function totalSupply() external view returns (uint256) {
-        return _allTokens.length;
-    }
-
-    /// @notice Enumerate valid NFTs
-    /// @dev Throws if `_index` >= `totalSupply()`.
-    /// @param _index A counter less than `totalSupply()`
-    /// @return The token identifier for the `_index`th NFT,
-    ///  (sort order not specified)
-    function tokenByIndex(uint256 _index) external view returns (uint256);
-
-    /// @notice Enumerate NFTs assigned to an owner
-    /// @dev Throws if `_index` >= `balanceOf(_owner)` or if
-    ///  `_owner` is the zero address, representing invalid NFTs.
-    /// @param _owner An address where we are interested in NFTs owned by them
-    /// @param _index A counter less than `balanceOf(_owner)`
-    /// @return The token identifier for the `_index`th NFT assigned to `_owner`,
-    ///   (sort order not specified)
-    function tokenOfOwnerByIndex(address _owner, uint256 _index) external view returns (uint256);
-
     function _mint(address to, uint256 tokenId) internal override(ERC721) {
         super._mint(to, tokenId);
 
@@ -45,10 +22,44 @@ contract ERC721Enumerable is ERC721 {
         // a. add tokens to the owner
         // b. all tokens to our totalsupply - to alltokens
 
-        _addTokensToTotalSupply(tokenId);
+        _addTokensToAllTokenEnumeration(tokenId);
+        _addTokensToOwnerEnumeration(to, tokenId);
     }
 
-    function _addTokensToTotalSupply(uint256 tokenId) private {
+    // Add tokens to the _allTokens array and set the position
+    // of the tokens indexes
+    function _addTokensToAllTokenEnumeration(uint256 tokenId) private {
+        // allTokensIndex, we add tokenID.
+        // Where do you add it to that position?
+        // To the length of allTokens
+        _allTokensIndex[tokenId] = _allTokens.length;
         _allTokens.push(tokenId);
+    }
+
+    function _addTokensToOwnerEnumeration(address to, uint256 tokenId) private {
+        // 1. token id to the address in ownerTokens
+        // 2. ownedTokensIndex tokenId set to the address of OwnedTokens position
+        // 3. we want to execute the function with minting
+        // 4. Compile and migrate
+
+        _ownedTokensIndex[tokenId] = _ownedTokens[to].length;
+        _ownedTokens[to].push(tokenId);
+    }
+
+    // 1 - function that returns the tokenbyIndex
+    function tokenByIndex(uint256 index) public view returns(uint256) {
+        require(index < totalSupply(), 'index is out of bounds');
+        return _allTokens[index];
+    }
+
+    // 2 0 returns tokenbyownerindex
+    function tokenOfOwnerByIndex(address owner, uint256 index) public view returns(uint256) {
+        require(index < balanceOf(owner), 'owner index is out of bounds');
+        return _ownedTokens[owner][index];
+    }
+
+    // return the total supply of the _allTokens array
+    function totalSupply() public view returns(uint256) {
+        return _allTokens.length;
     }
 }
