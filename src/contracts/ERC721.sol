@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import './ERC165.sol';
+import './interfaces/IERC721.sol';
+
     /*
     Building out the minting function:
         a. NFT to point to an address
@@ -11,14 +14,8 @@ pragma solidity ^0.8.0;
             Transfer log - contract address, where it is being minted to, the id
     */
 
-contract ERC721 {
+contract ERC721 is ERC165, IERC721 {
     uint constant NEW_TOKEN = 1;
-
-    event Transfer(
-        address from,
-        address to,
-        uint256 tokenId
-    );
 
     // Mapping in solidity creates a hash table of key pair values
     // Mapping from token id to the owner
@@ -35,7 +32,7 @@ contract ERC721 {
     ///  function throws for queries about the zero address.
     /// @param _owner An address for whom to query the balance
     /// @return The number of NFTs owned by `_owner`, possibly
-    function balanceOf(address _owner) public view returns(uint256) {
+    function balanceOf(address _owner) public override view returns(uint256) {
         require(_owner != address(0), 'Owner query for non-existent token');
 
         // return the token count of the _owner input
@@ -47,7 +44,7 @@ contract ERC721 {
     ///  about them do throw.
     /// @param _tokenId The identifier for an NFT
     /// @return The address of the owner of the NFT
-    function ownerOf(uint256 _tokenId) public view returns(address) {
+    function ownerOf(uint256 _tokenId) public override view returns(address) {
         address owner = _tokenOwner[_tokenId];
         require(owner != address(0), 'Query for non-existent owner');
 
@@ -105,7 +102,30 @@ contract ERC721 {
         emit Transfer(_from, _to, _tokenId);
     }
 
-    function transferFrom(address _from, address _to, uint256 _tokenId) public {
+    function transferFrom(address _from, address _to, uint256 _tokenId) public override {
+        require(isApprovedOrOwner(msg.sender, _tokenId), 'Error: Transfer is not approved');
         _transferFrom(_from, _to, _tokenId);
+    }
+
+    // 1. require that he person approving is the owner
+    // 2. approve an address to a token (tokenId)
+    // 3. require that we cant approve sending tokens
+    // 4. update the map of the approval addresses
+    function approve(address _to, uint256 tokenId) public {
+        address owner = ownerOf(tokenId);
+        require(_to != owner, 'Error: approval to current owner');
+        require(msg.sender == owner, 'Error: Current caller is not the owner');
+
+        _tokenApprovals[tokenId] = _to;
+
+        emit Approval(owner, _to, tokenId);
+    }
+
+    //TODO: download oppenzeppelin library to write out the approval function
+    function isApprovedOrOwner(address spender, uint256 tokenId) internal view returns(bool) {
+        require(_exists(tokenId), 'Error: Token Does not exist');
+
+        address owner = ownerOf(tokenId);
+        return(spender == owner);
     }
 }
